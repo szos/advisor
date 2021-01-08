@@ -2,6 +2,9 @@
 
 (in-package #:advisor)
 
+(defmacro generate-arg-list (&rest arglist)
+  )
+
 (defclass advisable-function ()
   ((main   :initarg :main   :initform nil
 	   :accessor advisable-function-main)
