@@ -32,6 +32,7 @@ Advisor is a project to define functions that can be advised.
    The ~remove-advice~ function removes the advice for /name/ specified by /qualifier/, or if /qualifier/ is ~:all~ or ~:everything~ removes all advice for /name/. 
 ** DE/ACTIVATE-ADVICE
    *deactivate-advice* /symbol/
+   
    *activate-advice* /symbol/
 
    These functions activate or deactivate advice for a function without deleting that advice. 
