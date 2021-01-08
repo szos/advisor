@@ -2,15 +2,6 @@
 
 (in-package #:advisor)
 
-;; (defun list-all-arguments (argslist)
-;;   "handle &optional, &rest, and &key args"
-;;   (labels ((churn (list)
-;; 	     (let ((el (car list)))
-;; 	       (cond ((equal el &))))))))
-
-;; (a b &optional c &rest others) should become
-;; (cons a (cons b (cons c others)))
-
 (defclass advisable-function ()
   ((main   :initarg :main   :initform nil
 	   :accessor advisable-function-main)
