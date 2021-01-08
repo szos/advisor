@@ -85,7 +85,7 @@ respectively. "
 			 ,@body)))))))
 	   (error "Not an advisable function")))))
 
-(cl:defun remove-advice (qualifier name)
+(defun remove-advice (qualifier name)
   "Remove advice for `name` determined by `qualifier`. Acceptable qualifiers are
 :before :after :around :all/:everything."
   (let ((advice-object (gethash name *advice-hash-table*)))
@@ -99,13 +99,13 @@ respectively. "
 	     (advisable-function-after advice-object) nil
 	     (symbol-function name) (advisable-function-main advice-object))))))
 
-(cl:defun deactivate-advice (symbol)
+(defun deactivate-advice (symbol)
   (let ((advice-object (gethash symbol *advice-hash-table*)))
     (if advice-object
 	(setf (symbol-function symbol) (advisable-function-main advice-object))
 	(error "No advice object found"))))
 
-(cl:defun activate-advice (symbol)
+(defun activate-advice (symbol)
   (let ((advice-object (gethash symbol *advice-hash-table*)))
     (if advice-object
 	(setf (symbol-function symbol)
