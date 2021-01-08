@@ -15,7 +15,7 @@ Advisor is a project to define functions that can be advised.
   It is absolutely neccessary to import either ~call-main-function~ or ~call-main-function-with-args~, as without it one or the other you will be unable to write advice ~:around~ a function, only ~:before~ and ~:after~. 
   
 ** DEFUN
-   *defun* /function-name/ /lambda-list/ /[​[declaration* | documentation]] /form*/
+   *defun* /function-name/ /lambda-list/ /[​[declaration* | documentation]] form*/
 
    The ~defun~ macro replaces ~cl:defun~, but is used in the same way. It generates a dispatch function alongside the main function, and sets the ~symbol-value~ of the provided function name to the main function. It additionally defines an advisable-function object which contains the main function and the dispatch function. 
 
