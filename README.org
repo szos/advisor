@@ -1,0 +1,25 @@
+#+TITLE: Advisor
+
+Advisor is a project to define functions that can be advised. 
+
+* Usage
+  To use this system seamlessly, youll need to import several symbols, and shadow-import defun, from the ~:advisor~ package. Here is an example defpackage form: 
+  #+BEGIN_SRC lisp
+    (defpackage #:example
+      (:shadowing-import-from #:advisor #:defun)
+      (:import-from #:advisor #:defadvice #:remove-advice #:call-main-function)
+      (:use #:cl))
+  #+END_SRC
+  It is absolutely neccessary to import ~call-main-function~, as without it one will be unable to write advice ~:around~ a function, only ~:before~ and ~:after~. 
+  
+** DEFUN
+   *defun* /function-name/ /lambda-list/ /[​[declaration* | documentation]] /form*/
+   The ~defun~ macro wraps around ~cl:defun~, but is used in the same way. It generates a dispatch function which is defined in place of the actual function body, and defines an advisable-function object which contains a main function with the provided body. 
+   While the dispatch function will call the before/after functions, it will always return the main function. If one wants to modify what is returned, one should define around advice instead, as that will be returned instead of the main function.  
+   Unfortunately, the dispatch function will always have a signature of *function* /&rest arguments/, as it is infeasible to account for ~&optional~, ~&key~, and ~&rest~ manually. 
+** DEFADVICE
+   *defadvice* /qualifier/ /function-name/ /lambda-list/ /[​[declaration* | documentation]]/ /form*/
+   The ~defadvice~ macro will add advice to the advisable-function object.  /lambda-list/ must have the same signature as the function being advised, or must be of the form ~(&rest arg)~ to allow the function to apply advice functions to the arguments. 
+** REMOVE-ADVICE
+   *remove-advice* /qualifier/ /name/
+   The ~remove-advice~ function removes the advice for /name/ specified by /qualifier/, or if /qualifier/ is ~:all~ or ~:everything~ removes all advice for /name/. 
