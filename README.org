@@ -7,15 +7,17 @@ Advisor is a project to define functions that can be advised.
   #+BEGIN_SRC lisp
     (defpackage #:example
       (:shadowing-import-from #:advisor #:defun)
-      (:import-from #:advisor #:defadvice #:remove-advice #:call-main-function)
+      (:import-from #:advisor #:defadvice #:remove-advice
+		    #:call-main-function #:call-main-function-with-args
+		    #:activate-advice #:deactivate-advice)
       (:use #:cl))
   #+END_SRC
-  It is absolutely neccessary to import ~call-main-function~, as without it one will be unable to write advice ~:around~ a function, only ~:before~ and ~:after~. 
+  It is absolutely neccessary to import either ~call-main-function~ or ~call-main-function-with-args~, as without it one or the other you will be unable to write advice ~:around~ a function, only ~:before~ and ~:after~. 
   
 ** DEFUN
    *defun* /function-name/ /lambda-list/ /[​[declaration* | documentation]] /form*/
 
-   The ~defun~ macro wraps around ~cl:defun~, but is used in the same way. It generates a dispatch function which is defined in place of the actual function body, and defines an advisable-function object which contains a main function with the provided body. 
+   The ~defun~ macro replaces ~cl:defun~, but is used in the same way. It generates a dispatch function alongside the main function, and sets the ~symbol-value~ of the provided function name to the main function. It additionally defines an advisable-function object which contains the main function and the dispatch function. 
 
    While the dispatch function will call the before/after functions, it will always return the main function. If one wants to modify what is returned, one should define around advice instead, as that will be returned instead of the main function.  
 
@@ -28,3 +30,8 @@ Advisor is a project to define functions that can be advised.
    *remove-advice* /qualifier/ /name/
 
    The ~remove-advice~ function removes the advice for /name/ specified by /qualifier/, or if /qualifier/ is ~:all~ or ~:everything~ removes all advice for /name/. 
+** DE/ACTIVATE-ADVICE
+   *deactivate-advice* /symbol/
+   *activate-advice* /symbol/
+
+   These functions activate or deactivate advice for a function without deleting that advice. 
