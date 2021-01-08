@@ -5,5 +5,8 @@
   (:shadow #:defun)
   (:export #:defun
 	   #:defadvice
+	   #:call-main-function
+	   #:call-main-function-with-args
 	   #:remove-advice
-	   #:call-main-function))
+	   #:activate-advice
+	   #:deactivate-advice))
