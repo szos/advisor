@@ -73,17 +73,12 @@ respectively. "
 		(:around
 		 `((advisable-function-around ,g)
 		   (macrolet ((call-main-function ()
-				`(apply (advisable-function-main ,',g) ,restarg)))
+				`(apply (advisable-function-main ,',g)
+					,',restarg)))
 		     (lambda (&rest ,restarg)
 		       (destructuring-bind ,args ,restarg
 			 ,@body)))))))
 	   (error "Not an advisable function")))))
-
-;; (destructuring-bind (&whole whole a b  &key hi) '(1 2  :hi hio)
-;;   (print hi)
-;;   whole)
-
-
 
 (defun remove-advice (qualifier name)
   "Remove advice for `name` determined by `qualifier`. Acceptable qualifiers are
