@@ -30,6 +30,10 @@ Advisor is a project to define functions that can be advised.
    *remove-advice* /qualifier/ /name/
 
    The ~remove-advice~ function removes the advice for /name/ specified by /qualifier/, or if /qualifier/ is ~:all~ or ~:everything~ removes all advice for /name/. 
+** DELETE-ADVICE
+   *delete-advice* /symbol &optional fmakunbound/
+
+   The ~delete-advice~ function deletes an advisable-function object. If /fmakunbound/ is nil, the ~symbol-function~ of /symbol/ is set to the main function of the advisable-function object before deletion. If /fmakunbound/ is t, then the ~symbol-function~ of /symbol/ is unbound. If /symbol/ does not denote an advisable-function object nothing is done. 
 ** DE/ACTIVATE-ADVICE
    *deactivate-advice* /symbol/
    
