@@ -99,13 +99,29 @@ respectively. "
 	     (advisable-function-after advice-object) nil
 	     (symbol-function name) (advisable-function-main advice-object))))))
 
+(defun delete-advice (symbol &optional fmakunbound)
+  "Delete an advisable function and reset the symbol-function to the main function.
+If fmakunbound is t, call fmakunbound on symbol"
+  (let ((obj (gethash symbol *advice-hash-table*)))
+    (when obj
+      (if fmakunbound
+	  (progn (remhash symbol *advice-hash-table*)
+		 (fmakunbound symbol))
+	  (progn (setf (symbol-function symbol)
+		       (advisable-function-main obj))
+		 (remhash symbol *advice-hash-table*))))))
+
 (defun deactivate-advice (symbol)
+  "Deactivate advice for a function, replacing the symbol-function with the main
+function of the advisable-function object."
   (let ((advice-object (gethash symbol *advice-hash-table*)))
     (if advice-object
 	(setf (symbol-function symbol) (advisable-function-main advice-object))
 	(error "No advice object found"))))
 
 (defun activate-advice (symbol)
+  "Activate advice for a function, replacing the symbol-function with the dispatch
+function of the advisable-function object"
   (let ((advice-object (gethash symbol *advice-hash-table*)))
     (if advice-object
 	(setf (symbol-function symbol)
