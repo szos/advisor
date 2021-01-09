@@ -17,7 +17,7 @@
 (defparameter *advice-hash-table* (make-hash-table))
 
 (defmacro defun (name args &body body)
-  "A wrapper around cl:defun which, instead of defining a function, defines a 
+  "A replacement for cl:defun which, instead of defining a function, defines a 
 advisable-function object, and additionally defines a dispatch function."
   (let* ((docstring (and (stringp (car body)) (car body)))
 	 (realbody (if docstring (cdr body) body))
