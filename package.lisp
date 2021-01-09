@@ -8,5 +8,6 @@
 	   #:call-main-function
 	   #:call-main-function-with-args
 	   #:remove-advice
+	   #:delete-advice
 	   #:activate-advice
 	   #:deactivate-advice))
