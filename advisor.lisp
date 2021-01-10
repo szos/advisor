@@ -2,6 +2,12 @@
 
 (in-package #:advisor)
 
+(defmacro with-advisable-object ((var symbol) &body body)
+  `(let ((,var (gethash ,symbol *advice-hash-table*)))
+     (if ,var
+	 (progn ,@body)
+	 (error "No advisable function object found"))))
+
 (defclass advisable-function ()
   ((dispatch :initarg :dispatch :initform nil
 	     :accessor advisable-function-dispatch)
@@ -16,18 +22,29 @@
 
 (defparameter *advice-hash-table* (make-hash-table))
 
+(cl:defun make-advisable-function (name main dispatch)
+  (setf (gethash name *advice-hash-table*)
+	(make-instance 'advisable-function
+		       :main main
+		       :dispatch dispatch)
+	(symbol-function name) dispatch))
+
 (defmacro defun (name args &body body)
-  "A replacement for cl:defun which, instead of defining a function, defines a 
-advisable-function object, and additionally defines a dispatch function."
+  "A replacement for cl:defun which creates an advisable-function object if one 
+does not exist, or redefines the main function if one does exist."
   (let* ((docstring (and (stringp (car body)) (car body)))
 	 (realbody (if docstring (cdr body) body))
-	 (fn (gensym "FUNCTION-NAME")) (dispatch (gensym "DISPATCH"))
 	 (g (gensym)) (main (gensym)) (before (gensym)) (after (gensym))
-	 (obj (gensym)) (around (gensym))
-	 (arguments (gensym "ARGUMENTS-LIST")))
-    `(let ((,g (gethash ',name *advice-hash-table*))
-	   (,fn (lambda ,args ,@(when docstring (list docstring)) ,@realbody))
-	   (,dispatch
+	 (obj (gensym)) (around (gensym)) (arguments (gensym "ARGUMENTS-LIST")))
+    `(let ((,g (gethash ',name *advice-hash-table*)))
+       (if ,g
+	   (with-slots (main) ,g
+	     (setf main (lambda ,args
+			  ,@(when docstring (list docstring))
+			  ,@realbody)))
+	   (make-advisable-function
+	    ',name
+	    (lambda ,args ,@(when docstring (list docstring)) ,@realbody)
 	    (lambda (&rest ,arguments)
 	      ,@(when docstring (list docstring))
 	      (let* ((,obj (gethash ',name *advice-hash-table*))
@@ -39,15 +56,7 @@ advisable-function object, and additionally defines a dispatch function."
 		    (if ,around
 			(apply ,around ,arguments)
 			(apply ,main ,arguments))
-		  (when ,after (apply ,after ,arguments)))))))
-       (if ,g
-	   (setf (advisable-function-main ,g) ,fn)
-	   (progn
-	     (setf (gethash ',name *advice-hash-table*)
-		   (make-instance 'advisable-function
-				  :main ,fn
-				  :dispatch ,dispatch))
-	     (setf (symbol-function ',name) ,fn))))))
+		  (when ,after (apply ,after ,arguments))))))))))
 
 (defmacro defadvice (qualifier function-name args &body body)
   "Defines and registers advice for `function-name`. Acceptable qualifiers are 
@@ -73,22 +82,25 @@ respectively. "
 		 `((advisable-function-before ,g)
 		   (lambda ,args ,@body)))
 		(:around
-		 `((advisable-function-around ,g)
-		   (macrolet ((call-main-function ()
-				`(apply (advisable-function-main ,',g)
-					,',restarg))
-			      (call-main-function-with-args (&rest callargs)
-				`(apply (advisable-function-main ,',g)
-					(list ,@callargs))))
-		     (lambda (&rest ,restarg)
-		       (destructuring-bind ,args ,restarg
-			 ,@body)))))))
+		 (let* ((docstring (when (stringp (car body)) (car body)))
+			(realbody (if docstring (cdr body) body)))
+		   `((advisable-function-around ,g)
+		     (macrolet ((call-main-function ()
+				  `(apply (advisable-function-main ,',g)
+					  ,',restarg))
+				(call-main-function-with-args (&rest callargs)
+				  `(apply (advisable-function-main ,',g)
+					  (list ,@callargs))))
+		       (lambda (&rest ,restarg)
+			 ,@(when docstring (list docstring))
+			 (destructuring-bind ,args ,restarg
+			   ,@realbody))))))))
 	   (error "Not an advisable function")))))
 
 (defun remove-advice (qualifier name)
   "Remove advice for `name` determined by `qualifier`. Acceptable qualifiers are
 :before :after :around :all/:everything."
-  (let ((advice-object (gethash name *advice-hash-table*)))
+  (with-advisable-object (advice-object name)
     (case qualifier
       (:around (setf (advisable-function-around advice-object) nil))
       (:before (setf (advisable-function-before advice-object) nil))
@@ -100,31 +112,34 @@ respectively. "
 	     (symbol-function name) (advisable-function-main advice-object))))))
 
 (defun delete-advice (symbol &optional fmakunbound)
-  "Delete an advisable function and reset the symbol-function to the main function.
-If fmakunbound is t, call fmakunbound on symbol"
-  (let ((obj (gethash symbol *advice-hash-table*)))
-    (when obj
-      (if fmakunbound
-	  (progn (remhash symbol *advice-hash-table*)
-		 (fmakunbound symbol))
-	  (progn (setf (symbol-function symbol)
-		       (advisable-function-main obj))
-		 (remhash symbol *advice-hash-table*))))))
+  "Delete an advisable function and reset the symbol-function to the main 
+function. If fmakunbound is t, call fmakunbound on symbol"
+  (if fmakunbound
+      (fmakunbound symbol)
+      (with-advisable-object (obj symbol)
+	(setf (symbol-function symbol) (advisable-function-main obj))))
+  (remhash symbol *advice-hash-table*))
 
 (defun deactivate-advice (symbol)
   "Deactivate advice for a function, replacing the symbol-function with the main
 function of the advisable-function object."
-  (let ((advice-object (gethash symbol *advice-hash-table*)))
-    (if advice-object
-	(setf (symbol-function symbol) (advisable-function-main advice-object))
-	(error "No advice object found"))))
+  (with-advisable-object (advisable-object symbol)
+    (setf (symbol-function symbol) (advisable-function-main advice-object))))
 
 (defun activate-advice (symbol)
   "Activate advice for a function, replacing the symbol-function with the dispatch
 function of the advisable-function object"
-  (let ((advice-object (gethash symbol *advice-hash-table*)))
-    (if advice-object
-	(setf (symbol-function symbol)
-	      (advisable-function-dispatch advice-object))
-	(error "No advice object found"))))
+  (with-advisable-object (advisable-object symbol)
+    (setf (symbol-function symbol) (advisable-function-dispatch advice-object))))
+
+(defun advice-documentation (symbol)
+  "returns an alist of the documentation for all advices and the main function"
+  (let (ret)
+    (with-advisable-object (advice-object symbol)
+      (with-slots (main before after around) advice-object
+	(when after (push (list :after (documentation after t)) ret))
+	(push (list :main (documentation main t)) ret)
+	(when around (push (list :around (documentation around t)) ret))
+	(when before (push (list :before (documentation before t)) ret))
+	ret))))
 
