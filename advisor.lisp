@@ -3,6 +3,8 @@
 (in-package #:advisor)
 
 (defmacro with-advisable-object ((var symbol) &body body)
+  "bind `var` to the advisable-function denoted by `symbol` and execute `body`. 
+If `symbol` doesnt denote an advisable-function error out."
   `(let ((,var (gethash ,symbol *advice-hash-table*)))
      (if ,var
 	 (progn ,@body)
@@ -20,9 +22,11 @@
    (around :initarg :around :initform nil
 	   :accessor advisable-function-around)))
 
-(defparameter *advice-hash-table* (make-hash-table))
+(defparameter *advice-hash-table* (make-hash-table)
+  "dispatch table for advisable-functions and their registered advice")
 
 (cl:defun make-advisable-function (name main dispatch)
+  "create an advisable function object"
   (setf (gethash name *advice-hash-table*)
 	(make-instance 'advisable-function
 		       :main main
