@@ -2,13 +2,23 @@
 
 (in-package #:advisor)
 
+(define-condition advisable-function-error (error) ())
+(define-condition no-advisable-function-error (advisable-function-error)
+  ((designator :initarg :designator
+	       :reader no-advisable-function-error-designator))
+  (:report
+   (lambda (c s)
+     (with-slots (designator) c
+       (format s "The symbol ~S doesnt designate an advisable function"
+	       designator)))))
+
 (defmacro with-advisable-object ((var symbol) &body body)
   "bind `var` to the advisable-function denoted by `symbol` and execute `body`. 
 If `symbol` doesnt denote an advisable-function error out."
   `(let ((,var (gethash ,symbol *advice-hash-table*)))
      (if ,var
 	 (progn ,@body)
-	 (error "No advisable function object found"))))
+	 (error 'no-advisable-function-error :designator ',symbol))))
 
 (defclass advisable-function ()
   ((dispatch :initarg :dispatch :initform nil
@@ -99,7 +109,7 @@ respectively. "
 			 ,@(when docstring (list docstring))
 			 (destructuring-bind ,args ,restarg
 			   ,@realbody))))))))
-	   (error "Not an advisable function")))))
+	   (error 'no-advisable-function-error :designator ',function-name)))))
 
 (defun remove-advice (qualifier name)
   "Remove advice for `name` determined by `qualifier`. Acceptable qualifiers are
