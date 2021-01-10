@@ -40,3 +40,7 @@ Advisor is a project to define functions that can be advised.
    *activate-advice* /symbol/
 
    These functions activate or deactivate advice for a function without deleting that advice. 
+** ADVICE-DOCUMENTATION
+   *advice-documentation* /symbol/
+
+   The ~advice-documentation~ function returns an alist with the documentation of the main function as well as all advice. The alist keys are ~:before~ ~:around~ ~:main~ and ~:after~. 
