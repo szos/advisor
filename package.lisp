@@ -10,4 +10,5 @@
 	   #:remove-advice
 	   #:delete-advice
 	   #:activate-advice
-	   #:deactivate-advice))
+	   #:deactivate-advice
+	   #:advice-documentation))
