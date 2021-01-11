@@ -41,7 +41,7 @@ If `symbol` doesnt denote an advisable-function error out."
 	(make-instance 'advisable-function
 		       :main main
 		       :dispatch dispatch)
-	(symbol-function name) dispatch))
+	(symbol-function name) main))
 
 (defmacro defun (name args &body body)
   "A replacement for cl:defun which creates an advisable-function object if one 
