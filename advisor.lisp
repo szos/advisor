@@ -137,13 +137,13 @@ function. If fmakunbound is t, call fmakunbound on symbol"
 (defun deactivate-advice (symbol)
   "Deactivate advice for a function, replacing the symbol-function with the main
 function of the advisable-function object."
-  (with-advisable-object (advisable-object symbol)
+  (with-advisable-object (advice-object symbol)
     (setf (symbol-function symbol) (advisable-function-main advice-object))))
 
 (defun activate-advice (symbol)
   "Activate advice for a function, replacing the symbol-function with the dispatch
 function of the advisable-function object"
-  (with-advisable-object (advisable-object symbol)
+  (with-advisable-object (advice-object symbol)
     (setf (symbol-function symbol) (advisable-function-dispatch advice-object))))
 
 (defun advice-documentation (symbol)
