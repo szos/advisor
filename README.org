@@ -1,6 +1,6 @@
 #+TITLE: Advisor
 
-Advisor is a project to define functions that can be advised. 
+Advisor is a project to define functions that can be advised. Advice can be designated for before, after, and around the main function. 
 
 * Usage
   To use this system seamlessly, youll need to import several symbols, and shadow-import defun, from the ~:advisor~ package. Here is an example defpackage form: 
@@ -9,7 +9,8 @@ Advisor is a project to define functions that can be advised.
       (:shadowing-import-from #:advisor #:defun)
       (:import-from #:advisor #:defadvice #:remove-advice
 		    #:call-main-function #:call-main-function-with-args
-		    #:activate-advice #:deactivate-advice)
+		    #:activate-advice #:deactivate-advice
+		    #:delete-advice #:advice-documentation)
       (:use #:cl))
   #+END_SRC
   It is absolutely neccessary to import either ~call-main-function~ or ~call-main-function-with-args~, as without it one or the other you will be unable to write advice ~:around~ a function, only ~:before~ and ~:after~. 
