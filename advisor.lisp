@@ -72,6 +72,30 @@ does not exist, or redefines the main function if one does exist."
 			(apply ,main ,arguments))
 		  (when ,after (apply ,after ,arguments))))))))))
 
+(cl:defun generate-defadvice-args-and-decls (arglist body)
+  (let* ((ignore-args (equal (car arglist) '&ignore))
+	 (docstring (when (stringp (car body)) (car body)))
+	 (decls (cond ((and docstring
+			    (equal (caadr body) 'declare))
+		       (cadr body))
+		      ((and (listp (car body))
+			    (equal (caar body) 'declare))
+		       (car body))))
+	 (bod (cond ((and docstring (equal (caadr body) 'declare))
+		     (cddr body))
+		    ((or docstring
+			 (and (listp (car body))
+			      (equal (caar body) 'declare)))
+		     (cdr body))
+		    (t body)))
+	 (g (when ignore-args (gensym))))
+    (if ignore-args
+	(list `(&rest ,g)
+	      docstring
+	      `(declare (ignore ,g) ,@(when (cdr decls) (cdr decls)))
+	      bod)
+	(list arglist docstring decls bod))))
+
 (defmacro defadvice (qualifier function-name args &body body)
   "Defines and registers advice for `function-name`. Acceptable qualifiers are 
 :after :before :around. When defining an :around advice, the main function is 
@@ -79,37 +103,32 @@ exposed via the local function `call-main-function`. If `call-main-function` isn
 called within the body of the :around advice, it wont be called. :before and 
 :after advice is called before and after :around advice (or the main function)
 respectively. "
-  (let ((g (gensym))
-	(restarg (gensym)))
-    `(let ((,g (gethash ',function-name *advice-hash-table*)))
-       (unless (equal (symbol-function ',function-name)
-		      (advisable-function-dispatch ,g))
-	 (setf (symbol-function ',function-name)
-	       (advisable-function-dispatch ,g)))
-       (if ,g
-	   (setf
-	    ,@(case qualifier
-		(:after
-		 `((advisable-function-after ,g)
-		   (lambda ,args ,@body)))
-		(:before
-		 `((advisable-function-before ,g)
-		   (lambda ,args ,@body)))
-		(:around
-		 (let* ((docstring (when (stringp (car body)) (car body)))
-			(realbody (if docstring (cdr body) body)))
-		   `((advisable-function-around ,g)
-		     (macrolet ((call-main-function ()
-				  `(apply (advisable-function-main ,',g)
-					  ,',restarg))
-				(call-main-function-with-args (&rest callargs)
-				  `(apply (advisable-function-main ,',g)
-					  (list ,@callargs))))
-		       (lambda (&rest ,restarg)
-			 ,@(when docstring (list docstring))
-			 (destructuring-bind ,args ,restarg
-			   ,@realbody))))))))
-	   (error 'no-advisable-function-error :designator ',function-name)))))
+  (let* ((g (gensym)) (restarg (gensym)) (fn (gensym)))
+    (destructuring-bind (argslist docstring declarations realbody)
+	(generate-defadvice-args-and-decls args body)
+      `(let ((,g (gethash ',function-name *advice-hash-table*))
+	     (,fn ,(if (eql qualifier :around)
+		       `(lambda (&rest ,restarg)
+                          ,@(when docstring (list docstring))
+			  (destructuring-bind ,argslist ,restarg
+                            ,@(when declarations (list declarations))
+			    ,@realbody))
+		       `(lambda ,argslist
+			  ,@(when docstring (list docstring))
+			  ,@(when declarations (list declarations))
+			  ,@realbody))))
+	 (unless (equal (symbol-function ',function-name)
+			(advisable-function-dispatch ,g))
+	   (setf (symbol-function ',function-name)
+		 (advisable-function-dispatch ,g)))
+	 (if ,g
+	     (setf
+	      ,@(case qualifier
+                  (:after `((advisable-function-after ,g)))
+		  (:before `((advisable-function-before ,g)))
+		  (:around `((advisable-function-around ,g))))
+	      ,fn)
+	     (error 'no-advisable-function-error :designator ',function-name))))))
 
 (defun remove-advice (qualifier name)
   "Remove advice for `name` determined by `qualifier`. Acceptable qualifiers are
