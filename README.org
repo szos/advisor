@@ -1,5 +1,7 @@
 #+TITLE: Advisor
 
+ADVISOR HAS BEEN REPLACED WITH CL-ADVICE, AVAILABLE HERE: https://github.com/szos/cl-advice
+
 Advisor is a project to define functions that can be advised. Advice can be designated for before, after, and around the main function. 
 
 * Usage
